@@ -28,6 +28,7 @@ class Board:
 
     def is_win(self, char):
         if self._get_max_line(char) == self.winning_line:
+            print(self)
             return True
         return False
                 
@@ -128,14 +129,14 @@ class Game:
             if not self._make_turn(self.player2, self.player1, 'o'):
                 break
 class Player:
-    def make_turn(self, board):
+    def make_turn(self, board, char):
         pass
 
     def __init__(self, name):
         self.name = name
 
 class HumanPlayer(Player):
-    def make_turn(self, board):
+    def make_turn(self, board, char):
         print(board)
         print(self.name + ", введите Ваш ход (exit чтобы закончить):")
         turn = input()
@@ -147,9 +148,58 @@ class HumanPlayer(Player):
 class AIPlayer(Player):
     def make_turn(self, board, char):
         print(board)
+        list_turns = []
         for i in range(board._len):
             for j in range(board._len):
+                list_turns.append((i, j, self._get_weight(board, i, j, char, 'x' if char == 'o' else 'o')))
+        
+        best_turn = (-1, -1, 0)
+        for i in list_turns:
+            if i[2] > best_turn[2]:
+                best_turn = i
+        return str(best_turn[0]+1) + ' ' + str(best_turn[1]+1)
 
+
+    def _get_weight(self, board, a, b, char, char2):
+        if board._get_char_at(a, b) != '-':
+            return 0
+        else:
+            return self._wl(board, a, b, char, char2, 0, 1) \
+                 + self._wl(board, a, b, char, char2, 0, -1) \
+                 + self._wl(board, a, b, char, char2, 1, 0) \
+                 + self._wl(board, a, b, char, char2, 1, 1) \
+                 + self._wl(board, a, b, char, char2, 1, -1) \
+                 + self._wl(board, a, b, char, char2, -1, 0) \
+                 + self._wl(board, a, b, char, char2, -1, 1) \
+                 + self._wl(board, a, b, char, char2, -1, -1) 
+
+    def _wl(self, board, a, b, char, char2, mod_a, mod_b):
+        result = 0.1
+        last_char = ''
+        for i in range(1, 3):
+            if a+i*mod_a >= board._len or a+i*mod_a < 0 or b+i*mod_b >= board._len or b+i*mod_b < 0:
+                result = result/2
+                break
+            if board._get_char_at(a+i*mod_a, b+i*mod_b) == '-':
+                result += 0.1/i
+                last_char = '-'
+            elif board._get_char_at(a+i*mod_a, b+i*mod_b) == char:
+                if last_char == char or last_char == '':
+                    result += 0.2*i**2
+                    if i == 3:
+                        result += 100
+                else:
+                    break
+                last_char = char
+            elif board._get_char_at(a+i*mod_a, b+i*mod_b) == char2:
+                if last_char == char2 or last_char == '':
+                    result += 0.1*i**2
+                    if i == 3:
+                        result += 50
+                else:
+                    break
+                last_char = char2
+        return result
 
 
 
